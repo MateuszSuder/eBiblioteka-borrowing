@@ -1,0 +1,276 @@
+openapi: 3.0.3
+info:
+  title: Borrowing service
+  description: |-
+  version: 1.0.0
+servers:
+  - url: https://localhost/api/borrowing
+    description: Local development
+paths:
+  /borrowing:
+    get:
+      description: Lista wypożyczeń użytkownika
+      responses:
+        200:
+          description: Zwrócono listę wypożyczeń użytkownika
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BorrowingList"
+        401:
+          description: Brak tokena
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericError"
+  /borrowing/{userId}:
+    get:
+      description: Lista wypożyczeń użytkownika
+      parameters:
+        - in: path
+          name: userId
+          description: ID użytkownika, którego wypożyczeń szukamy
+          schema:
+            type: string
+      responses:
+        200:
+          description: Zwrócono listę wypożyczeń użytkownika
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BorrowingList"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          description: Użytkownik nieznaleziony
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericError"
+  /borrow/{userId}/{bookId}:
+    post:
+      description: Wypożycz książkę użytkownikowi
+      parameters:
+        - in: path
+          name: userId
+          description: ID użytkownika
+          schema:
+            type: string
+        - in: path
+          name: bookId
+          description: ID książki
+          schema:
+            type: string
+      responses:
+        201:
+          description: Wypożyczenie utworzone
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  borrowingId:
+                    type: string
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          description: Książka/użytkownik nieznaleziony
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericError"
+  /borrow/{id}:
+    delete:
+      description: Zakończ wypożyczenie (zmiana statusu na returned)
+      parameters:
+        - in: path
+          name: id
+          description: id wypożyczenia
+          schema:
+            type: string
+      responses:
+        200:
+          description: Wypożyczenie zakończone
+        400:
+          description: Użytkownik nadal ma zadłużenie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  debt:
+                    type: number
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          description: Wypożyczenie nieznalezione
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericError"
+  /borrow/{id}/extend:
+    put:
+      description: Przyjmij/odrzuć prośbę o przedłużenie wypożyczenia
+      parameters:
+        - in: path
+          name: id
+          description: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accept:
+                  type: boolean
+      responses:
+        200:
+          description: Przedłużenie przyjęte/odrzucone
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          description: Wypożyczenie nieznalezione
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericError"
+  /borrow/{id}/ask:
+    post:
+      description: Poproś o przedłużenie
+      parameters:
+        - in: path
+          name: id
+          description: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Prośba o przedłużenie złożona
+        404:
+          description: Wypożyczenie nieznalezione
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericError"
+  /borrowings:
+    get:
+      description: Lista wszystkich wypożyczeń użytkowników
+      parameters:
+        - $ref: "#/components/parameters/BorrowingStatus"
+        - $ref: "#/components/parameters/BorrowingSearch"
+        - in: query
+          name: offset
+          description: Offset
+          required: true
+          schema:
+            type: number
+        - in: query
+          name: limit
+          description: Limit
+          schema:
+            type: number
+      responses:
+        200:
+          description: Lista wypożyczeń zwrócona
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BorrowingList"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          description: Wypożyczenie nieznalezione
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericError"
+components:
+  responses:
+    Forbidden:
+      description: Brak uprawnień
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GenericError"
+  parameters:
+    BorrowingStatus:
+      in: query
+      name: status
+      description: Filtorowanie po statusie. Tylko jeden do wyboru
+      schema:
+        type: string
+        enum: [borrowed, overdue, returned]
+    BorrowingSearch:
+      in: query
+      name: search
+      description: Wyszukiwanie po emailu użytkownika
+      schema:
+        type: string
+  schemas:
+    Borrowing:
+      type: object
+      properties:
+        _id:
+          type: string
+        bookId:
+          type: string
+        userId:
+          type: string
+        expiryDate:
+          type: string
+          pattern: /([0-9]{4})-(?:[0-9]{2})-([0-9]{2})/
+          example: "2019-05-17"
+        renewalRequested:
+          type: boolean
+        renewedBefore:
+          type: boolean
+        debt:
+          type: number
+        status:
+          type: string
+          enum: [borrowed, overdue, returned]
+    BorrowingInput:
+      type: object
+      properties:
+        bookId:
+          type: string
+        userId:
+          type: string
+    BorrowingList:
+      type: object
+      properties:
+        borrowings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Borrowing"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    PaginationInput:
+      type: object
+      properties:
+        offset:
+          description: Początkowy index zwracanych wartości
+          type: number
+        limit:
+          description: Ilość wartości
+          type: number
+    Pagination:
+      type: object
+      allOf:
+        - properties:
+            count:
+              description: Ilość możliwych wartości
+              type: number
+        - $ref: "#/components/schemas/PaginationInput"
+    GenericError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
