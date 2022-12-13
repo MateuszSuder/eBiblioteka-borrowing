@@ -1,9 +1,11 @@
-FROM node:16-alpine
-WORKDIR /template
+FROM node:latest
+ARG NAME
+
+WORKDIR /$NAME
 
 COPY package.json ./
 RUN npm install && npm cache clean --force
 
 COPY . ./
-EXPOSE 4000
+EXPOSE ${PORT}
 CMD [ "npm", "start" ]
