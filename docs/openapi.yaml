@@ -4,21 +4,23 @@ info:
   description: |-
   version: 1.0.0
 servers:
-  - url: https://localhost/api/borrowing
+  - url: https://localhost/api
     description: Local development
 paths:
   /borrowing:
     get:
-      description: Lista wypożyczeń użytkownika
+      description: Lista wszystkich wypożyczeń użytkowników
       responses:
         200:
-          description: Zwrócono listę wypożyczeń użytkownika
+          description: Lista wypożyczeń zwrócona
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/BorrowingList"
-        401:
-          description: Brak tokena
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          description: Wypożyczenie nieznalezione
           content:
             application/json:
               schema:
@@ -30,6 +32,7 @@ paths:
         - in: path
           name: userId
           description: ID użytkownika, którego wypożyczeń szukamy
+          required: true
           schema:
             type: string
       responses:
@@ -47,18 +50,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericError"
-  /borrow/{userId}/{bookId}:
+  /borrowing/{userId}/{bookId}:
     post:
       description: Wypożycz książkę użytkownikowi
       parameters:
         - in: path
           name: userId
           description: ID użytkownika
+          required: true
           schema:
             type: string
         - in: path
           name: bookId
           description: ID książki
+          required: true
           schema:
             type: string
       responses:
@@ -79,13 +84,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericError"
-  /borrow/{id}:
     delete:
       description: Zakończ wypożyczenie (zmiana statusu na returned)
       parameters:
         - in: path
-          name: id
-          description: id wypożyczenia
+          name: userId
+          description: ID użytkownika
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: bookId
+          description: ID książki
+          required: true
           schema:
             type: string
       responses:
@@ -108,28 +119,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericError"
-  /borrow/{id}/extend:
+  /borrowing/{userId}/{bookId}/extend:
     put:
-      description: Przyjmij/odrzuć prośbę o przedłużenie wypożyczenia
+      description: Przyjmij prośbę o przedłużenie wypożyczenia
       parameters:
         - in: path
-          name: id
-          description: id
+          name: userId
+          description: ID użytkownika
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                accept:
-                  type: boolean
+        - in: path
+          name: bookId
+          description: ID książki
+          required: true
+          schema:
+            type: string
       responses:
         200:
-          description: Przedłużenie przyjęte/odrzucone
+          description: Przedłużenie przyjęte
         403:
           $ref: "#/components/responses/Forbidden"
         404:
@@ -138,51 +146,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericError"
-  /borrow/{id}/ask:
+        409:
+          description: Prośba już złożona wcześniej
+  /borrowing/{userId}/{bookId}/ask:
     post:
       description: Poproś o przedłużenie
       parameters:
         - in: path
-          name: id
-          description: id
+          name: userId
+          description: ID użytkownika
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: bookId
+          description: ID książki
           required: true
           schema:
             type: string
       responses:
         200:
-          description: Prośba o przedłużenie złożona
-        404:
-          description: Wypożyczenie nieznalezione
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericError"
-  /borrowings:
-    get:
-      description: Lista wszystkich wypożyczeń użytkowników
-      parameters:
-        - $ref: "#/components/parameters/BorrowingStatus"
-        - $ref: "#/components/parameters/BorrowingSearch"
-        - in: query
-          name: offset
-          description: Offset
-          required: true
-          schema:
-            type: number
-        - in: query
-          name: limit
-          description: Limit
-          schema:
-            type: number
-      responses:
-        200:
-          description: Lista wypożyczeń zwrócona
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BorrowingList"
-        403:
-          $ref: "#/components/responses/Forbidden"
+          description: Przedłużenie zaakceptowane (jeśli to pierwsze przedłużenie)
+        202:
+          description: Prośba o przedłużenie złożona (jeśli to nie pierwsze przedłużenie)
         404:
           description: Wypożyczenie nieznalezione
           content:
@@ -248,8 +234,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Borrowing"
-        pagination:
-          $ref: "#/components/schemas/Pagination"
     PaginationInput:
       type: object
       properties:
