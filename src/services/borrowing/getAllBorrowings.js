@@ -15,6 +15,4 @@ export default async (req, res) => {
     } catch (e) {
         return mongooseErrorResponse(res, e);
     }
-
-    res.status(501).send(`Get all borrowings`);
 }
