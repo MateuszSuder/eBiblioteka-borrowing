@@ -27,10 +27,20 @@ const withAuth = (options= {
                     cookies += `${cookie}=${req.cookies[cookie]};`
                 }
 
-                const { payload: user } = await internalFetcher("auth", "POST", "authorize", {
+                const { payload } = await internalFetcher("auth", "POST", "authorize", {
                     headers: {
                         Cookie: cookies
                     }
+                })
+
+                const user = await internalFetcher("user", "GET", "", {
+                    headers: {
+                        Cookie: cookies
+                    },
+                    query: {
+                        id: payload._id
+                    },
+                    key: true
                 })
 
                 if(options?.role) {
@@ -39,8 +49,14 @@ const withAuth = (options= {
                     if(ROLES[user.role] < ROLES[options.role]) return genericErrorResponse(res, null, 403);
                 }
 
+                if(user) {
+                    if(user.isBanned) return genericErrorResponse(res, `Użytkownik zbanowany`, 403);
+                    if(user.isDeleted) return genericErrorResponse(res, `Użytkownik usunięty`, 403);
+                }
+
                 req.user = user;
             } catch (e) {
+                console.log(e);
                 return genericErrorResponse(res, null, e.status || 500);
             }
         }
