@@ -1,4 +1,7 @@
 import genericErrorResponse from "../../utils/genericErrorResponse.js";
+import mongooseErrorResponse from "../../utils/mongooseErrorResponse.js";
+import internalFetcher from "../../http/internalFetcher.js";
+import BorrowingSchema from "../../schemas/BorrowingSchema.js";
 
 /**
  * @param {e.Request} req
@@ -11,16 +14,41 @@ export default async (req, res) => {
         return genericErrorResponse(res, "", 403);
     }
 
+    // todo
     // Get number of borrowings of book with status BORROWED or OVERDUE
     // Get number of reservations of book with status RESERVED
     // Count number of borrowings + reservations
-    // Get requested book
     // If book.amount === borrowings + reservations return error
-    if(false) {
-        return genericErrorResponse(res, "Brak książek na stanie", 400);
-    }
-
     // If amount is ok create borrowing
 
-    res.status(501).send(`Create borrowing ${userId} ${bookId}`);
+    try {
+        const book = await internalFetcher("book", "GET", `/${bookId}`);
+        const user = await internalFetcher("user", "GET", "", {
+            query: {
+                id: userId
+            },
+            key: true
+        });
+
+        try {
+            if(!book._id) return genericErrorResponse(res, "Brak książki o podanym id", 404);
+            if(!user._id) return genericErrorResponse(res, "Brak użytkownika o podanym id", 404);
+
+            const date = new Date();
+            date.setDate(date.getDate() + 7 * 2);
+
+            const borrowing = new BorrowingSchema({
+                userId,
+                bookId,
+                expiryDate: date
+            })
+
+            await borrowing.save();
+            res.status(201).json(borrowing);
+        } catch (e) {
+            return mongooseErrorResponse(res, e);
+        }
+    } catch (e) {
+        return genericErrorResponse(res, "Nie prawidłowe id", 404);
+    }
 }

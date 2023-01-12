@@ -1,4 +1,6 @@
 import genericErrorResponse from "../../utils/genericErrorResponse.js";
+import BorrowingSchema from "../../schemas/BorrowingSchema.js";
+import mongooseErrorResponse from "../../utils/mongooseErrorResponse.js";
 
 /**
  * @param {e.Request} req
@@ -7,11 +9,19 @@ import genericErrorResponse from "../../utils/genericErrorResponse.js";
 export default async (req, res) => {
     const { userId, bookId } = req.params;
 
-    // Change status to returned, if no borrowings affected return 404
+    try {
+        const response = await BorrowingSchema.findOneAndUpdate({
+            userId,
+            bookId,
+            status: { $ne: "RETURNED" }
+        })
 
-    if(false) {
-        return genericErrorResponse(res, "Wypożyczenie nie znalezione", 404)
+        if(!response) {
+            return genericErrorResponse(res, "Wypożyczenie nie znalezione", 404)
+        }
+
+        return res.status(200).send(null);
+    } catch (e) {
+        return mongooseErrorResponse(res, e);
     }
-
-    res.status(501).send(`Delete borrowing ${userId} ${bookId}`);
 }

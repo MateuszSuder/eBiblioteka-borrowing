@@ -1,4 +1,6 @@
 import genericErrorResponse from "../../utils/genericErrorResponse.js";
+import mongooseErrorResponse from "../../utils/mongooseErrorResponse.js";
+import BorrowingSchema from "../../schemas/BorrowingSchema.js";
 
 /**
  * @param {e.Request} req
@@ -11,7 +13,13 @@ export default async (req, res) => {
         return genericErrorResponse(res, "", 403);
     }
 
-    // Find borrowings with given userId
+    try {
+        const borrowings = await BorrowingSchema.find({
+            userId
+        })
 
-    res.status(501).send(`Get user borrowings ${userId}`);
+        res.status(200).json({borrowings});
+    } catch (e) {
+        return mongooseErrorResponse(res, e);
+    }
 }

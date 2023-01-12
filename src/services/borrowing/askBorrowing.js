@@ -1,4 +1,6 @@
 import genericErrorResponse from "../../utils/genericErrorResponse.js";
+import mongooseErrorResponse from "../../utils/mongooseErrorResponse.js";
+import BorrowingSchema from "../../schemas/BorrowingSchema.js";
 
 /**
  * @param {e.Request} req
@@ -7,13 +9,45 @@ import genericErrorResponse from "../../utils/genericErrorResponse.js";
 export default async (req, res) => {
     const { userId, bookId } = req.params;
 
-    // Search for borrowing with given userId, bookId, status !== returned
-    if(false) {
-        return genericErrorResponse(res, "Wypożyczenie nie znalezione", 404)
+    try {
+        // Search for borrowing with given userId, bookId, status !== returned
+
+        const { _id, renewedBefore, expiryDate } = await BorrowingSchema.findOne({
+            userId,
+            bookId,
+            status: { $ne: "RETURNED" }
+        })
+
+        if(!_id) {
+            return genericErrorResponse(res, "Wypożyczenie nie znalezione", 404)
+        }
+
+        if(!renewedBefore) {
+            const date = new Date(expiryDate);
+            date.setDate(date.getDate() + 7 * 2);
+
+            // If renewedBefore === false extend expiryDate by 14 days and change renewedBefore to true
+            await BorrowingSchema.findOneAndUpdate(
+                {
+                    _id
+                },
+                {
+                    renewedBefore: true,
+                    expiryDate: date
+                })
+        } else {
+            // Else change renewal request to true (if it's not already changed)
+            await BorrowingSchema.findOneAndUpdate(
+                {
+                    _id
+                },
+                {
+                    renewalRequest: true
+                })
+        }
+
+        return res.status(200).send(null);
+    } catch (e) {
+        return mongooseErrorResponse(res, e);
     }
-
-    // If renewedBefore === false extend expiryDate by 14 days and change renewedBefore to true
-    // Else change renewal request to true (if it's not already changed)
-
-    res.status(501).send(`Ask borrowing ${userId} ${bookId}`);
 }

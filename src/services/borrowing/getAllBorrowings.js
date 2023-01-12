@@ -1,5 +1,5 @@
-import genericErrorResponse from "../../utils/genericErrorResponse.js";
-import internalFetcher from "../../http/internalFetcher.js";
+import mongooseErrorResponse from "../../utils/mongooseErrorResponse.js";
+import BorrowingSchema from "../../schemas/BorrowingSchema";
 
 /**
  * @param {e.Request} req
@@ -7,6 +7,14 @@ import internalFetcher from "../../http/internalFetcher.js";
  */
 export default async (req, res) => {
     // Return all borrowings
+
+    try {
+        const borrowings = await BorrowingSchema.find();
+
+        res.status(200).json({borrowings})
+    } catch (e) {
+        return mongooseErrorResponse(res, e);
+    }
 
     res.status(501).send(`Get all borrowings`);
 }

@@ -35,3 +35,5 @@ const BorrowingSchema = new mongoose.Schema({
         default: "BORROWED"
     }
 })
+
+export default mongoose.model("Borrowing", BorrowingSchema);
