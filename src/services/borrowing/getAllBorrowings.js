@@ -1,5 +1,5 @@
 import mongooseErrorResponse from "../../utils/mongooseErrorResponse.js";
-import BorrowingSchema from "../../schemas/BorrowingSchema";
+import BorrowingSchema from "../../schemas/BorrowingSchema.js";
 
 /**
  * @param {e.Request} req
