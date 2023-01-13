@@ -10,11 +10,16 @@ export default async (req, res) => {
     const { userId, bookId } = req.params;
 
     try {
-        const response = await BorrowingSchema.findOneAndUpdate({
-            userId,
-            bookId,
-            status: { $ne: "RETURNED" }
-        })
+        const response = await BorrowingSchema.findOneAndUpdate(
+            {
+                userId,
+                bookId,
+                status: { $ne: "RETURNED" }
+            },
+            {
+                status: "RETURNED"
+            }
+            )
 
         if(!response) {
             return genericErrorResponse(res, "Wypożyczenie nie znalezione", 404)
@@ -22,6 +27,7 @@ export default async (req, res) => {
 
         return res.status(200).send(null);
     } catch (e) {
+        console.log(e);
         return mongooseErrorResponse(res, e);
     }
 }

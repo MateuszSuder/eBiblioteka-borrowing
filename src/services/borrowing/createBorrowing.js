@@ -9,8 +9,9 @@ import BorrowingSchema from "../../schemas/BorrowingSchema.js";
  */
 export default async (req, res) => {
     const { userId, bookId } = req.params;
+    const { reservationId } = req.query;
 
-    if(req.user && req.user._id !== userId) {
+    if(req.user && req.user._id !== userId && req.user.role === "USER") {
         return genericErrorResponse(res, "", 403);
     }
 
@@ -22,7 +23,7 @@ export default async (req, res) => {
     // If amount is ok create borrowing
 
     try {
-        const book = await internalFetcher("book", "GET", `/${bookId}`);
+        const book = await internalFetcher("book", "GET", `${bookId}`);
         const user = await internalFetcher("user", "GET", "", {
             query: {
                 id: userId
@@ -44,11 +45,22 @@ export default async (req, res) => {
             })
 
             await borrowing.save();
+
+            if(reservationId) {
+                await internalFetcher("reservation", "PUT", `${reservationId}`, {
+                    key: true,
+                    body: {
+                        status: "BORROWED"
+                    }
+                });
+            }
+
             res.status(201).json(borrowing);
         } catch (e) {
             return mongooseErrorResponse(res, e);
         }
     } catch (e) {
+        console.log(e);
         return genericErrorResponse(res, "Nie prawidłowe id", 404);
     }
 }

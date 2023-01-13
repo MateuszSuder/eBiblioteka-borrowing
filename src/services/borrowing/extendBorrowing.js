@@ -10,15 +10,14 @@ export default async (req, res) => {
     const { userId, bookId } = req.params;
 
     try {
-        // Search for borrowing with given userId, bookId, renewalRequested === true
+        // Search for borrowing with given userId, bookId
         const { _id, expiryDate } = await BorrowingSchema.findOne({
             userId,
             bookId,
-            renewalRequest: true,
             status: { $ne: "RETURNED" }
         })
 
-        if(_id) {
+        if(!_id) {
             return genericErrorResponse(res, "Wypożyczenie nie znalezione", 404)
         }
 
@@ -38,6 +37,7 @@ export default async (req, res) => {
 
         return res.status(200).send(null);
     } catch (e) {
+        console.log(e);
         return mongooseErrorResponse(res, e);
     }
 }

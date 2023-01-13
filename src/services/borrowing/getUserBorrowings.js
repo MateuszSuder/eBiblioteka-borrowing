@@ -9,7 +9,7 @@ import BorrowingSchema from "../../schemas/BorrowingSchema.js";
 export default async (req, res) => {
     const { userId } = req.params;
 
-    if(req.user && req.user._id !== userId) {
+    if(req.user && req.user._id !== userId && req.user.role === "USER") {
         return genericErrorResponse(res, "", 403);
     }
 
