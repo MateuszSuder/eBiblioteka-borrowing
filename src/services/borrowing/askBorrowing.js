@@ -35,6 +35,8 @@ export default async (req, res) => {
                     renewedBefore: true,
                     expiryDate: date
                 })
+
+            return res.status(200).send({extended: true});
         } else {
             // Else change renewal request to true (if it's not already changed)
             await BorrowingSchema.findOneAndUpdate(
@@ -44,9 +46,9 @@ export default async (req, res) => {
                 {
                     renewalRequest: true
                 })
-        }
 
-        return res.status(200).send(null);
+            return res.status(200).send({extended: false});
+        }
     } catch (e) {
         return mongooseErrorResponse(res, e);
     }
