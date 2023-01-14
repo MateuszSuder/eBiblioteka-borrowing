@@ -12,15 +12,11 @@ export default async (req, res) => {
     try {
         // Search for borrowing with given userId, bookId, status !== returned
 
-        console.log(1);
-
         const { _id, renewedBefore, expiryDate } = await BorrowingSchema.findOne({
             userId,
             bookId,
             status: { $ne: "RETURNED" }
         })
-
-        console.log(_id, renewedBefore, expiryDate);
 
         if(!_id) {
             return genericErrorResponse(res, "Wypożyczenie nie znalezione", 404)
